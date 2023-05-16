@@ -1,10 +1,12 @@
 version: '3'
 services:
   ctfd:
-    image: ctfd/ctfd
+    restart: always
+    image: ctfd/ctfd:3.5.1
     ports:
         - 8000:8000
   nginx:
+    restart: always
     image: nginx
     ports:
         - 80:80
@@ -15,6 +17,7 @@ services:
         - ./data/certbot/www:/var/www/certbot
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
   certbot:
+    restart: always
     image: certbot/certbot
     volumes:
         - ./data/certbot/conf:/etc/letsencrypt
