@@ -1,10 +1,33 @@
 version: '3'
 services:
   ctfd:
+    image: ctfd/ctfd
     restart: always
-    image: ctfd/ctfd:3.5.1
     ports:
         - 8000:8000
+    environment:
+        - UPLOAD_FOLDER=/var/uploads
+        - LOG_FOLDER=/var/log/CTFd
+        - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
+    volumes:
+        - .data/CTFd/logs:/var/log/CTFd
+        - .data/CTFd/uploads:/var/uploads
+    depends_on:
+        - db
+
+  db:
+    image: mariadb:10.4.12
+    restart: always
+    environment:
+        - MYSQL_ROOT_PASSWORD=ctfd
+        - MYSQL_USER=ctfd
+        - MYSQL_PASSWORD=ctfd
+        - MYSQL_DATABASE=ctfd
+    volumes:
+        - .data/mysql:/var/lib/mysql
+    # This command is required to set important mariadb defaults
+    command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
+
   nginx:
     restart: always
     image: nginx
@@ -16,6 +39,7 @@ services:
         - ./data/certbot/conf:/etc/letsencrypt
         - ./data/certbot/www:/var/www/certbot
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+  
   certbot:
     restart: always
     image: certbot/certbot
@@ -23,3 +47,4 @@ services:
         - ./data/certbot/conf:/etc/letsencrypt
         - ./data/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
