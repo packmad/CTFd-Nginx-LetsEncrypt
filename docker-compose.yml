@@ -2,6 +2,7 @@ version: '3'
 services:
   ctfd:
     image: ctfd/ctfd
+    user: root
     restart: always
     ports:
         - 8000:8000
