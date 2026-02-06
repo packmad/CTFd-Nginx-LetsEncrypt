@@ -1,37 +1,46 @@
-version: '3'
 services:
   ctfd:
-    image: ctfd/ctfd
+    image: ctfd/ctfd:3.8.2
     user: root
     restart: always
-    ports:
-        - 8000:8000
+    expose:
+        - "8000"
     environment:
         - UPLOAD_FOLDER=/var/uploads
         - LOG_FOLDER=/var/log/CTFd
         - DATABASE_URL=mysql+pymysql://ctfd:ctfd@db/ctfd
+        - REDIS_URL=redis://cache:6379
+        - REVERSE_PROXY=true
     volumes:
         - .data/CTFd/logs:/var/log/CTFd
         - .data/CTFd/uploads:/var/uploads
     depends_on:
         - db
+        - cache
 
   db:
-    image: mariadb:10.4.12
+    image: mariadb:10.11.8
     restart: always
     environment:
-        - MYSQL_ROOT_PASSWORD=ctfd
-        - MYSQL_USER=ctfd
-        - MYSQL_PASSWORD=ctfd
-        - MYSQL_DATABASE=ctfd
+        - MARIADB_ROOT_PASSWORD=ctfd
+        - MARIADB_USER=ctfd
+        - MARIADB_PASSWORD=ctfd
+        - MARIADB_DATABASE=ctfd
+        - MARIADB_AUTO_UPGRADE=1
     volumes:
         - .data/mysql:/var/lib/mysql
     # This command is required to set important mariadb defaults
     command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
 
+  cache:
+    image: redis:7.4.2-alpine3.21
+    restart: always
+    volumes:
+        - .data/redis:/data
+
   nginx:
     restart: always
-    image: nginx
+    image: nginx:1.28.2-alpine3.23
     ports:
         - 80:80
         - 443:443
@@ -43,7 +52,7 @@ services:
   
   certbot:
     restart: always
-    image: certbot/certbot
+    image: certbot/certbot:v5.2.2
     volumes:
         - ./data/certbot/conf:/etc/letsencrypt
         - ./data/certbot/www:/var/www/certbot
