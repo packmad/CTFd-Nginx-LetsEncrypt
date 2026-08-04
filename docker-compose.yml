@@ -15,8 +15,22 @@ services:
         - .data/CTFd/logs:/var/log/CTFd
         - .data/CTFd/uploads:/var/uploads
     depends_on:
-        - db
-        - cache
+      db:
+        condition: service_healthy
+      cache:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
     networks:
         - default
         - internal
@@ -34,6 +48,12 @@ services:
         - .data/mysql:/var/lib/mysql
     # This command is required to set important mariadb defaults
     command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     networks:
         - internal
 
@@ -42,6 +62,12 @@ services:
     restart: always
     volumes:
         - .data/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
     networks:
         - internal
 
@@ -56,6 +82,9 @@ services:
         - ./data/certbot/conf:/etc/letsencrypt
         - ./data/certbot/www:/var/www/certbot
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    depends_on:
+      ctfd:
+        condition: service_healthy
     networks:
         - default
         - internal

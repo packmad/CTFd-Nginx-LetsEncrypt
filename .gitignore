@@ -1,2 +1,5 @@
-# CTFd persistence folder 
+# CTFd persistence (DB, Redis, uploads, logs)
 .data/
+
+# Let's Encrypt / certbot runtime state (TLS seeds live in ./tls)
+data/certbot/
