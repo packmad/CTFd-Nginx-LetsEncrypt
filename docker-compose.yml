@@ -1,6 +1,6 @@
 services:
   ctfd:
-    image: ctfd/ctfd:3.8.2
+    image: ctfd/ctfd:3.8.6
     user: root
     restart: always
     expose:
