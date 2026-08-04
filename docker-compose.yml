@@ -17,6 +17,9 @@ services:
     depends_on:
         - db
         - cache
+    networks:
+        - default
+        - internal
 
   db:
     image: mariadb:10.11.8
@@ -31,12 +34,16 @@ services:
         - .data/mysql:/var/lib/mysql
     # This command is required to set important mariadb defaults
     command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --wait_timeout=28800, --log-warnings=0]
+    networks:
+        - internal
 
   cache:
     image: redis:7.4.2-alpine3.21
     restart: always
     volumes:
         - .data/redis:/data
+    networks:
+        - internal
 
   nginx:
     restart: always
@@ -49,7 +56,10 @@ services:
         - ./data/certbot/conf:/etc/letsencrypt
         - ./data/certbot/www:/var/www/certbot
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-  
+    networks:
+        - default
+        - internal
+
   certbot:
     restart: always
     image: certbot/certbot:v5.2.2
@@ -58,3 +68,7 @@ services:
         - ./data/certbot/www:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
+networks:
+  default:
+  internal:
+    internal: true
